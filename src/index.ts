@@ -107,6 +107,10 @@ const healthBuffer: ReadingBuffer = new ReadingBuffer();
 if (config.healthExportEnabled)
 {
     createHealthServer({token: config.healthExportToken, unit: config.healthExportUnit, buffer: healthBuffer})
+        .on("error", err =>
+        {
+            logger.error("Health export failed to start: " + err.message);
+        })
         .listen(config.healthExportPort, () =>
         {
             logger.info("Health export listening on port " + config.healthExportPort);
@@ -305,44 +309,44 @@ const nightscoutClient = config.nightscoutApiV3
     ? new ClientV3(config)
     : new ClientV1(config);
 
-export async function createFormattedMeasurements(measurementData: GraphData): Promise<Entry[]>
+/**
+ * Maps every reading in the LibreLink Up response, newest first, without filtering anything out.
+ */
+export function createAllMeasurements(measurementData: GraphData): Entry[]
 {
-    const formattedMeasurements: Entry[] = [];
     const glucoseMeasurement = measurementData.connection.glucoseMeasurement;
-    const measurementDate = getUtcDateFromString(glucoseMeasurement.FactoryTimestamp);
-    const lastEntry = config.allData ? null : await nightscoutClient.lastEntry();
-    // Add the most recent measurement first
-    if (lastEntry === null || measurementDate > lastEntry.date)
-    {
-        formattedMeasurements.push({
-            date: measurementDate,
-            direction: mapTrendArrow(glucoseMeasurement.TrendArrow),
-            sgv: glucoseMeasurement.ValueInMgPerDl
-        });
-    }
+    const measurements: Entry[] = [{
+        date: getUtcDateFromString(glucoseMeasurement.FactoryTimestamp),
+        direction: mapTrendArrow(glucoseMeasurement.TrendArrow),
+        sgv: glucoseMeasurement.ValueInMgPerDl
+    }];
 
     measurementData.graphData.forEach((glucoseMeasurementHistoryEntry: GlucoseItem) =>
     {
-        const entryDate = getUtcDateFromString(glucoseMeasurementHistoryEntry.FactoryTimestamp);
-        if (lastEntry === null || entryDate > lastEntry.date)
-        {
-            formattedMeasurements.push({
-                date: entryDate,
-                sgv: glucoseMeasurementHistoryEntry.ValueInMgPerDl,
-            });
-        }
+        measurements.push({
+            date: getUtcDateFromString(glucoseMeasurementHistoryEntry.FactoryTimestamp),
+            sgv: glucoseMeasurementHistoryEntry.ValueInMgPerDl,
+        });
     });
-    return formattedMeasurements;
+    return measurements;
+}
+
+export async function createFormattedMeasurements(measurementData: GraphData): Promise<Entry[]>
+{
+    const lastEntry = config.allData ? null : await nightscoutClient.lastEntry();
+    return createAllMeasurements(measurementData)
+        .filter(entry => lastEntry === null || entry.date > lastEntry.date);
 }
 
 async function uploadToNightScout(measurementData: GraphData): Promise<void>
 {
-    const formattedMeasurements: Entry[] = await createFormattedMeasurements(measurementData);
-
+    // The health export keeps its own copy of every reading, independent of what Nightscout already has.
     if (config.healthExportEnabled)
     {
-        healthBuffer.add(formattedMeasurements);
+        healthBuffer.add(createAllMeasurements(measurementData));
     }
+
+    const formattedMeasurements: Entry[] = await createFormattedMeasurements(measurementData);
 
     if (formattedMeasurements.length > 0)
     {

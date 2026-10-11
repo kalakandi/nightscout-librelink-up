@@ -1,5 +1,5 @@
 import "jest";
-import {AddressInfo} from "node:net";
+import {AddressInfo, connect} from "node:net";
 import {Server} from "node:http";
 import {Direction} from "../../../src/nightscout/interface";
 import {convertGlucose, ReadingBuffer, toHealthSamples} from "../../../src/health/samples";
@@ -56,9 +56,9 @@ describe("ReadingBuffer", () =>
     {
         const buffer = new ReadingBuffer(2);
         buffer.add([
+            entry("2026-01-01T10:10:00Z", 120),
             entry("2026-01-01T10:00:00Z", 100),
             entry("2026-01-01T10:05:00Z", 110),
-            entry("2026-01-01T10:10:00Z", 120),
         ]);
         expect(buffer.all().map(e => e.sgv).sort()).toEqual([110, 120]);
     });
@@ -103,6 +103,21 @@ describe("Health server", () =>
         const filtered = await (await get("/readings?since=2026-01-01T10:00:00Z", "secret")).json() as Payload;
         expect(filtered.samples).toHaveLength(1);
         expect((await get("/readings?since=nope", "secret")).status).toBe(400);
+    });
+
+    it("answers a malformed request line with 400 instead of crashing", async () =>
+    {
+        const port = (server.address() as AddressInfo).port;
+        const response = await new Promise<string>((resolve, reject) =>
+        {
+            const socket = connect(port, "127.0.0.1", () => socket.write("GET //[ HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"));
+            let data = "";
+            socket.on("data", chunk => data += chunk);
+            socket.on("end", () => resolve(data));
+            socket.on("error", reject);
+        });
+        expect(response).toContain("400");
+        expect((await get("/readings", "secret")).status).toBe(200);
     });
 
     it("returns 404 for unknown paths", async () =>

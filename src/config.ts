@@ -63,9 +63,15 @@ function readConfig()
             exitLog(`HEALTH_EXPORT_UNIT should be either 'mg/dL' or 'mmol/L', but got '${process.env.HEALTH_EXPORT_UNIT}'`);
         }
 
-        if (process.env.HEALTH_EXPORT_PORT && isNaN(parseInt(process.env.HEALTH_EXPORT_PORT)))
+        const port = Number(process.env.HEALTH_EXPORT_PORT);
+        if (process.env.HEALTH_EXPORT_PORT && !(Number.isInteger(port) && port > 0 && port < 65536))
         {
-            exitLog(`HEALTH_EXPORT_PORT expected to be an integer, but got '${process.env.HEALTH_EXPORT_PORT}'`);
+            exitLog(`HEALTH_EXPORT_PORT should be an integer between 1 and 65535, but got '${process.env.HEALTH_EXPORT_PORT}'`);
+        }
+
+        if (process.env.SINGLE_SHOT === 'true')
+        {
+            exitLog("HEALTH_EXPORT_ENABLED cannot be combined with SINGLE_SHOT, because the export server needs a long-running process");
         }
     }
 

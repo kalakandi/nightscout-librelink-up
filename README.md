@@ -36,7 +36,7 @@ The script takes the following environment variables:
 | ALL_DATA                 | Upload all available data from LibreLink Up instead of just data newer than last upload. LibreLinkUp sometimes lags behind in reporting recent historical data, so it is advised to run the script with ALL_DATA set to true at least once a day. | true                                     |          |
 | RETRY_ATTEMPTS           | Number of times to retry download from LibreLinkUp / upload to Nightscout if an error happens - default: 0 (do not attempt to retry on failure).                                                                                                  | 2                                        |          |
 | RETRY_INTERVAL_SECONDS   | Interval (in seconds) between retry attempts.                                                                                                                                                                                                     | 30                                       |          |
-| HEALTH_EXPORT_ENABLED    | Set to `true` to serve recent readings at `GET /readings` for an iPhone Shortcut (Apple Health). | `false` |  |
+| HEALTH_EXPORT_ENABLED    | Set to `true` to serve recent readings at `GET /readings` for an iPhone Shortcut (Apple Health). Cannot be combined with `SINGLE_SHOT`. | `false` |  |
 | HEALTH_EXPORT_TOKEN      | Bearer token clients must send. Required when the export is enabled. |  | x (if enabled) |
 | HEALTH_EXPORT_PORT       | Port of the export endpoint. | 8787 |  |
 | HEALTH_EXPORT_UNIT       | Unit of exported values: `mg/dL` or `mmol/L`. | mg/dL |  |

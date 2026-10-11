@@ -38,7 +38,15 @@ export function createHealthServer({token, unit, buffer}: HealthServerOptions): 
 {
     return createServer((req, res) =>
     {
-        const url = new URL(req.url ?? "/", "http://localhost");
+        let url: URL;
+        try
+        {
+            url = new URL(req.url ?? "/", "http://localhost");
+        } catch
+        {
+            sendJson(res, 400, {error: "bad request"});
+            return;
+        }
 
         if (req.method !== "GET" || url.pathname !== "/readings")
         {
