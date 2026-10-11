@@ -12,7 +12,7 @@ import {LoginResponse} from "./interfaces/librelink/login-response";
 import {ConnectionsResponse} from "./interfaces/librelink/connections-response";
 import {GraphData, GraphResponse} from "./interfaces/librelink/graph-response";
 import {AuthTicket, Connection, GlucoseItem} from "./interfaces/librelink/common";
-import {getUtcDateFromString, mapTrendArrow, retry} from "./helpers/helpers";
+import {getUtcDateFromString, mapTrendArrow, redactHeaders, retry} from "./helpers/helpers";
 import {LibreLinkUpHttpHeaders} from "./interfaces/http-headers";
 import {Client as ClientV1} from "./nightscout/apiv1";
 import {Client as ClientV3} from "./nightscout/apiv3";
@@ -73,7 +73,7 @@ axios.interceptors.response.use(
         {
             logger.error(error.message);
         }
-        return error;
+        return Promise.reject(error);
     }
 );
 
@@ -377,7 +377,7 @@ function getLluAuthHeaders(): LibreLinkUpHttpHeaders
             logger.error("Error getting accountId: ", error);
         }
     }
-    logger.debug("authenticatedHttpHeaders: " + JSON.stringify(authenticatedHttpHeaders));
+    logger.debug("authenticatedHttpHeaders: " + JSON.stringify(redactHeaders(authenticatedHttpHeaders)));
     return authenticatedHttpHeaders;
 }
 
