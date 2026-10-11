@@ -385,7 +385,8 @@ function logPickedUpConnection(connection: Connection): void
 
 function getLluAuthHeaders(): LibreLinkUpHttpHeaders
 {
-    const authenticatedHttpHeaders = libreLinkUpHttpHeaders;
+    // Work on a copy: the shared headers are also used for login, which must not send an old token or account id.
+    const authenticatedHttpHeaders: LibreLinkUpHttpHeaders = {...libreLinkUpHttpHeaders};
     authenticatedHttpHeaders.Authorization = "Bearer " + getAuthenticationToken();
 
     if (authTicket)
