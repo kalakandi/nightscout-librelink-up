@@ -25,6 +25,7 @@ import {Agent as HttpsAgent} from "node:https";
 import * as crypto from "crypto";
 import {ReadingBuffer} from "./health/samples";
 import {createHealthServer} from "./health/server";
+import {Server} from "node:http";
 
 // Generate new Ciphers for stealth mode in order to bypass SSL fingerprinting used by Cloudflare.
 // The new Ciphers are then used in the HTTPS Agent for Axios.
@@ -102,11 +103,10 @@ const libreLinkUpHttpHeaders: LibreLinkUpHttpHeaders = {
     "account-id": "",
 }
 
-const healthBuffer: ReadingBuffer = new ReadingBuffer();
+export const healthBuffer: ReadingBuffer = new ReadingBuffer();
 
-if (config.healthExportEnabled)
-{
-    createHealthServer({token: config.healthExportToken, unit: config.healthExportUnit, buffer: healthBuffer})
+export const healthServer: Server | undefined = config.healthExportEnabled
+    ? createHealthServer({token: config.healthExportToken, unit: config.healthExportUnit, buffer: healthBuffer})
         .on("error", err =>
         {
             logger.error("Health export failed to start: " + err.message);
@@ -114,8 +114,8 @@ if (config.healthExportEnabled)
         .listen(config.healthExportPort, () =>
         {
             logger.info("Health export listening on port " + config.healthExportPort);
-        });
-}
+        })
+    : undefined;
 
 if (config.singleShot)
 {
