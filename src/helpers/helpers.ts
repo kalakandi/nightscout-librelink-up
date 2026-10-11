@@ -5,6 +5,19 @@
  */
 import { Direction } from "../nightscout/interface";
 
+const SENSITIVE_HEADERS = ["authorization", "account-id", "api-secret"];
+
+/**
+ * Returns a copy of the given HTTP headers that is safe to log: values of credential-bearing headers are masked.
+ */
+export function redactHeaders(headers: Record<string, unknown>): Record<string, unknown>
+{
+    return Object.fromEntries(
+        Object.entries(headers).map(([name, value]) =>
+            [name, SENSITIVE_HEADERS.includes(name.toLowerCase()) ? "[REDACTED]" : value])
+    );
+}
+
 export function mapTrendArrow(libreTrendArrowRaw: number): Direction {
     switch (libreTrendArrowRaw) {
         case 1:

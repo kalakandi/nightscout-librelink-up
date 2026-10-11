@@ -1,7 +1,28 @@
 import "jest";
-import {getUtcDateFromString, mapTrendArrow} from "../../../src/helpers/helpers";
+import {getUtcDateFromString, mapTrendArrow, redactHeaders} from "../../../src/helpers/helpers";
 
 describe("Helpers", () => {
+    it("Redacting credential headers for logging", async () =>
+    {
+        const headers = {
+            "User-Agent": "test-agent",
+            "Authorization": "Bearer secret-token",
+            "account-id": "abc123",
+            "API-SECRET": "hunter2",
+            "version": "4.16.0",
+        };
+
+        expect(redactHeaders(headers)).toEqual({
+            "User-Agent": "test-agent",
+            "Authorization": "[REDACTED]",
+            "account-id": "[REDACTED]",
+            "API-SECRET": "[REDACTED]",
+            "version": "4.16.0",
+        });
+        // The original object must stay untouched, because it is used for real requests.
+        expect(headers.Authorization).toBe("Bearer secret-token");
+    });
+
     it("Mapping Trend Arrows from LibreLink Up to Nightscout", async () =>
     {
         expect(mapTrendArrow(1)).toBe("SingleDown");
