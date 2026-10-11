@@ -43,6 +43,10 @@ The script takes the following environment variables:
 
 These variables can be set in your environment or in a `.env` file in the root directory of the project - see `.env.example` for an example (copy this file to `.env` and adjust the values accordingly).
 
+### Apple Health export
+
+The health export serves your recent readings over HTTP so that an iPhone Shortcut can log them to Apple Health. See the [setup guide](docs/apple-health-shortcut.md).
+
 ## Usage
 
 There are different options for using this script.
