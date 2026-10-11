@@ -1,5 +1,5 @@
 import "jest";
-import {createFormattedMeasurements, getGlucoseMeasurements, getLibreLinkUpConnection, login,} from "../../../src";
+import {createAllMeasurements, createFormattedMeasurements, getGlucoseMeasurements, getLibreLinkUpConnection, login,} from "../../../src";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import {default as loginSuccessResponse} from "../../data/login.json";
@@ -119,5 +119,25 @@ describe("LibreLink Up", () =>
         expect(formattedMeasurements[1].date.getTime()).toBe(1672384839000);
         expect(formattedMeasurements[1]).not.toHaveProperty("direction");
         expect(formattedMeasurements[1].sgv).toBe(177);
+    });
+
+    it("Create all measurements regardless of what Nightscout already has", async () =>
+    {
+        mock.onGet("http://localhost:1337/api/v1/entries?count=1").reply(200, entriesResponse);
+        const glucoseMeasurements: GraphData | null = await getGlucoseMeasurements();
+        expect(glucoseMeasurements).not.toBeNull();
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const allMeasurements: Entry[] = createAllMeasurements(glucoseMeasurements);
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const newMeasurements: Entry[] = await createFormattedMeasurements(glucoseMeasurements);
+
+        // Nightscout already has part of the data, but the full set is still available for other consumers.
+        expect(allMeasurements.length).toBe(142);
+        expect(newMeasurements.length).toBe(112);
+        expect(allMeasurements[0].direction).toBe("Flat");
+        expect(allMeasurements[0].date.getTime()).toBe(1672418860000);
     });
 });
