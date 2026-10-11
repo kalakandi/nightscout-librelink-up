@@ -1,5 +1,6 @@
 import dotenvx from "@dotenvx/dotenvx";
 import {LLU_API_ENDPOINTS} from './constants/llu-api-endpoints';
+import {GlucoseUnit, isGlucoseUnit} from './health/samples';
 
 // configure dotenvx, and ignore missing .env file (assume a missing .env file is intentional)
 dotenvx.config({ quiet: true, ignore: ['MISSING_ENV_FILE'] });
@@ -50,6 +51,24 @@ function readConfig()
         }
     }
 
+    if (process.env.HEALTH_EXPORT_ENABLED === 'true')
+    {
+        if (!process.env.HEALTH_EXPORT_TOKEN)
+        {
+            exitLog("HEALTH_EXPORT_TOKEN must be set when HEALTH_EXPORT_ENABLED is 'true'");
+        }
+
+        if (process.env.HEALTH_EXPORT_UNIT && !isGlucoseUnit(process.env.HEALTH_EXPORT_UNIT))
+        {
+            exitLog(`HEALTH_EXPORT_UNIT should be either 'mg/dL' or 'mmol/L', but got '${process.env.HEALTH_EXPORT_UNIT}'`);
+        }
+
+        if (process.env.HEALTH_EXPORT_PORT && isNaN(parseInt(process.env.HEALTH_EXPORT_PORT)))
+        {
+            exitLog(`HEALTH_EXPORT_PORT expected to be an integer, but got '${process.env.HEALTH_EXPORT_PORT}'`);
+        }
+    }
+
     const protocol =
         process.env.NIGHTSCOUT_DISABLE_HTTPS === 'true' ? 'http://' : 'https://';
     const url = new URL(protocol + process.env.NIGHTSCOUT_URL);
@@ -75,6 +94,10 @@ function readConfig()
         linkUpConnection: process.env.LINK_UP_CONNECTION as string,
         retryAttempts: Number(process.env.RETRY_ATTEMPTS) || 0,
         retryIntervalSeconds: Number(process.env.RETRY_INTERVAL_SECONDS) || 30,
+        healthExportEnabled: process.env.HEALTH_EXPORT_ENABLED === 'true',
+        healthExportPort: Number(process.env.HEALTH_EXPORT_PORT) || 8787,
+        healthExportToken: process.env.HEALTH_EXPORT_TOKEN as string,
+        healthExportUnit: (process.env.HEALTH_EXPORT_UNIT || 'mg/dL') as GlucoseUnit,
     };
 }
 

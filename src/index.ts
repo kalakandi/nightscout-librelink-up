@@ -23,6 +23,8 @@ import {HttpCookieAgent} from "http-cookie-agent/http";
 import {Agent as HttpAgent} from "node:http";
 import {Agent as HttpsAgent} from "node:https";
 import * as crypto from "crypto";
+import {ReadingBuffer} from "./health/samples";
+import {createHealthServer} from "./health/server";
 
 // Generate new Ciphers for stealth mode in order to bypass SSL fingerprinting used by Cloudflare.
 // The new Ciphers are then used in the HTTPS Agent for Axios.
@@ -98,6 +100,17 @@ const libreLinkUpHttpHeaders: LibreLinkUpHttpHeaders = {
     "version": LIBRE_LINK_UP_VERSION,
     "product": LIBRE_LINK_UP_PRODUCT,
     "account-id": "",
+}
+
+const healthBuffer: ReadingBuffer = new ReadingBuffer();
+
+if (config.healthExportEnabled)
+{
+    createHealthServer({token: config.healthExportToken, unit: config.healthExportUnit, buffer: healthBuffer})
+        .listen(config.healthExportPort, () =>
+        {
+            logger.info("Health export listening on port " + config.healthExportPort);
+        });
 }
 
 if (config.singleShot)
@@ -325,6 +338,11 @@ export async function createFormattedMeasurements(measurementData: GraphData): P
 async function uploadToNightScout(measurementData: GraphData): Promise<void>
 {
     const formattedMeasurements: Entry[] = await createFormattedMeasurements(measurementData);
+
+    if (config.healthExportEnabled)
+    {
+        healthBuffer.add(formattedMeasurements);
+    }
 
     if (formattedMeasurements.length > 0)
     {
